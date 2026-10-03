@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model User {
+  id            Int      @id @default(autoincrement())
+  title         String?  @db.VarChar(50)
+  first_name    String   @db.VarChar(50)
+  middle_name   String?  @db.VarChar(50)
+  last_name     String   @db.VarChar(50)
+  phone_number  String?  @db.VarChar(30)
+  cohort        String?  @db.VarChar(150)
+  email_address String?  @unique @db.VarChar(200)
+  password      String?  @db.VarChar(255)
+  role          String   @default("INTERN") @db.VarChar(30) // ADMIN | INTERN
+  is_active     Boolean
+  created_by    String?  @db.VarChar(200)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  opportunityLinks OpportunityUser[]
+  documents Document[] 
+}
+
+model Department {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(255)
+  department_head String   @db.VarChar(150)
+  description     String?  // text in PostgreSQL, handled as String
+  is_active       Boolean
+  created_by      String?  @db.VarChar(200)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+}
+
+model Opportunity {
+  id                     Int      @id @default(autoincrement())
+  title                  String   @db.VarChar(255)
+  department             String   @db.VarChar(255)
+  opportunity_type       String   @db.VarChar(255)
+  opportunity_description String  // stored as `text` in DB
+  core_competencies      String   // stored as `text` in DB
+  compensation_type      String   @db.VarChar(255)
+  compensation_currency  String   @db.VarChar(255)
+  compensation_amount    Float
+  expiry_date            DateTime
+  is_active              Boolean
+  created_by             String   @db.VarChar(200)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  userLinks OpportunityUser[]
+
+  @@index([is_active, expiry_date])
+  @@map("opportunities")
+}
+
+
+model OpportunityUser {
+  id             Int         @id @default(autoincrement())
+  user_id        Int
+  opportunity_id Int
+  is_active      Boolean
+  status         String      @default("APPLIED") @db.VarChar(30) // APPLIED | SHORTLISTED | ACCEPTED | REJECTED | WITHDRAWN
+  created_at     DateTime    @default(now())
+
+  // Foreign key relations
+  user           User        @relation(fields: [user_id], references: [id])
+  opportunity    Opportunity @relation(fields: [opportunity_id], references: [id])
+
+  @@unique([user_id, opportunity_id]) // one application per person per opportunity
+  @@index([opportunity_id])
+  @@map("opportunity_user")
+}
+
+
+model Document {
+  id                   Int     @id @default(autoincrement())
+  user_id              Int
+  name                 String  @db.VarChar(255)
+  description          String  // stored as text
+  file_path            String  @db.VarChar(255)
+  file_name            String  @db.VarChar(255)
+  file_extension       String  @db.VarChar(10)
+  file_size_in_kilobytes Float
+  is_active            Boolean
+  created_by           String  @db.VarChar(200)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  // Foreign key relation
+  user                 User    @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@map("documents")
+}
+
+
+model OpportunityType {
+  id          Int      @id @default(autoincrement())
+  type        String   @db.VarChar(255)
+  description String   // stored as text
+  is_active   Boolean
+  created_by  String   @db.VarChar(200)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("opportunity_types") // Optional: aligns with actual DB table name
+}
+
+
+model CompensationType {
+  id          Int      @id @default(autoincrement())
+  type        String   @db.VarChar(255)
+  description String   // stored as text
+  is_active   Boolean
+  created_by  String   @db.VarChar(200)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("compensation_types") // Optional: matches exact DB table name
+}
+
+
+model Cohort {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(150)
+  code_name  String   @db.VarChar(150)
+  president  String   @db.VarChar(150)
+  start_date DateTime
+  end_date   DateTime
+  is_active  Boolean
+  created_by String   @db.VarChar(200)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("cohorts") // Optional: match exact table name if needed
+}
+
+model Title {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  description String   // stored as text
+  is_active   Boolean
+  created_by  String   @db.VarChar(200)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("titles") // Optional: ensures Prisma uses the exact table name
+}
